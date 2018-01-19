@@ -64,7 +64,7 @@ ParsePublicKey parses a pem encoded public key (rsa or ecdsa based)
 ```go
 func GetClaimsFromRequest(r *http.Request, key interface{}) (Claims, error)
 ```
-GetClaimsFromRequest extracts the
+GetClaimsFromRequest extracts and validates the token from a request, returning the claims
 
 #### func  ValidateToken
 

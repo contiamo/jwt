@@ -135,7 +135,7 @@ func GetTokenFromRequest(r *http.Request) (string, error) {
 	return parts[1], nil
 }
 
-// GetClaimsFromRequest extracts the
+// GetClaimsFromRequest extracts and validates the token from a request, returning the claims
 func GetClaimsFromRequest(r *http.Request, key interface{}) (Claims, error) {
 	token, err := GetTokenFromRequest(r)
 	if err != nil {
