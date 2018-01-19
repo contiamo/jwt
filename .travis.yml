@@ -5,6 +5,12 @@ go:
   - 1.9.x
   - master
 
+
 before_install:
-  - go get -v github.com/golang/dep/cmd/dep
+  - go get -v github.com/golang/dep/cmd/dep github.com/onsi/ginkgo/ginkgo
+
+install:
   - dep ensure --vendor-only -v
+
+script:
+  - ginkgo -v -cover
