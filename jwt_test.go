@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.com/contiamo/jwt"
+	. "github.com/Contiamo/jwt"
 )
 
 var _ = Describe("JWT", func() {
