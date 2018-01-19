@@ -1,4 +1,7 @@
 # jwt - human friendly json web token library
+[![Build Status](https://travis-ci.org/Contiamo/jwt.svg?branch=master)](https://travis-ci.org/Contiamo/jwt) [![Go Report Card](https://goreportcard.com/badge/github.com/Contiamo/jwt)](https://goreportcard.com/report/github.com/Contiamo/jwt)  [![Documentation](https://godoc.org/github.com/Contiamo/jwt?status.svg)](http://godoc.org/github.com/Contiamo/jwt) [![Coverage Status](https://coveralls.io/repos/github/Contiamo/jwt/badge.svg?branch=master)](https://coveralls.io/github/Contiamo/jwt?branch=master) [![GitHub issues](https://img.shields.io/github/issues/Contiamo/jwt.svg)](https://github.com/Contiamo/jwt/issues) [![license](https://img.shields.io/github/license/Contiamo/jwt.svg?maxAge=2592000)](https://github.com/Contiamo/jwt/LICENSE) [![Release](https://img.shields.io/github/release/Contiamo/jwt.svg?label=Release)](https://github.com/Contiamo/jwt/releases)
+
+
 
 ```go
 import "github.com/contiamo/jwt"
