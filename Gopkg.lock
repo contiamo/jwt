@@ -2,12 +2,6 @@
 
 
 [[projects]]
-  branch = "master"
-  name = "github.com/Contiamo/jwt"
-  packages = ["."]
-  revision = "1e383c3642c630f9df0906558d1ddd3e918407ff"
-
-[[projects]]
   name = "github.com/dgrijalva/jwt-go"
   packages = ["."]
   revision = "dbeaa9332f19a944acb5736b4456cfcc02140e29"
@@ -106,6 +100,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "9a89aae12946f7c94becf345ac5cc0037740319fd95706712310ac48131cbd2d"
+  inputs-digest = "705c7bb541cf5e5cef96b8cd587cc5a2c91b2895d519e137e33cd43809e5e5e2"
   solver-name = "gps-cdcl"
   solver-version = 1
