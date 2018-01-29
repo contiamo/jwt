@@ -28,7 +28,7 @@ CreateToken takes some claims and a key (either private rsa, private ec or hmac 
 #### func GetTokenFromRequest
 
 ```go
-func GetTokenFromRequest(r *http.Request) (string, error)
+func GetTokenFromRequest(r *http.Request) (TokenPrefix, string, error)
 ```
 GetTokenFromRequest takes the first Authorization header and extracts the bearer
 json web token
@@ -64,7 +64,7 @@ ParsePublicKey parses a pem encoded public key (rsa or ecdsa based)
 #### func GetClaimsFromRequest
 
 ```go
-func GetClaimsFromRequest(r *http.Request, key interface{}) (Claims, error)
+func GetClaimsFromRequest(r *http.Request, key interface{}) (TokenPrefix, Claims, error)
 ```
 GetClaimsFromRequest extracts and validates the token from a request, returning the claims
 

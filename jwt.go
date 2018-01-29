@@ -9,7 +9,13 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/dgrijalva/jwt-go"
+	jwt "github.com/dgrijalva/jwt-go"
+)
+
+const (
+	// AuthorizationHeader is the constant string used to get the Authorization
+	// headers
+	AuthorizationHeader = "Authorization"
 )
 
 // Claims is a map of string->something containing the meta infos associated with a token
@@ -125,21 +131,43 @@ func ParsePrivateKey(data []byte) (interface{}, error) {
 	return rsaKey, nil
 }
 
-// GetTokenFromRequest takes the first Authorization header and extracts the bearer json web token
-func GetTokenFromRequest(r *http.Request) (string, error) {
-	authHeader := r.Header.Get("Authorization")
-	parts := strings.Split(authHeader, " ")
-	if len(parts) != 2 {
-		return "", errors.New("no valid authorization header")
+// GetTokenFromRequest takes the first Authorization header or `token` GET pararm , then
+// extract the token prefix and json web token
+func GetTokenFromRequest(r *http.Request) (prefix string, token string, err error) {
+
+	tokenList, ok := r.Header[AuthorizationHeader]
+	// pull from GET if not in the headers
+	if !ok || len(tokenList) < 1 {
+		tokenList, ok = r.URL.Query()["token"]
+		prefix = "GET"
 	}
-	return parts[1], nil
+
+	if len(tokenList) < 1 {
+		prefix = ""
+		return prefix, token, errors.New("no valid authorization header")
+	}
+
+	tokenParts := strings.Fields(tokenList[0])
+	switch len(tokenParts) {
+	case 1:
+		token = tokenParts[0]
+	case 2:
+		prefix = tokenParts[0]
+		token = tokenParts[1]
+	default:
+		return prefix, token, errors.New("invalid token: unexpected number of parts")
+	}
+
+	return prefix, token, nil
 }
 
 // GetClaimsFromRequest extracts and validates the token from a request, returning the claims
-func GetClaimsFromRequest(r *http.Request, key interface{}) (Claims, error) {
-	token, err := GetTokenFromRequest(r)
+func GetClaimsFromRequest(r *http.Request, key interface{}) (prefix string, claims Claims, err error) {
+	prefix, token, err := GetTokenFromRequest(r)
 	if err != nil {
-		return nil, err
+		return prefix, nil, err
 	}
-	return ValidateToken(token, key)
+
+	claims, err = ValidateToken(token, key)
+	return prefix, claims, err
 }

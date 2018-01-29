@@ -1,4 +1,4 @@
-package jwt_test
+package jwt
 
 import (
 	"io/ioutil"
@@ -7,8 +7,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	. "github.com/Contiamo/jwt"
 )
 
 var _ = Describe("JWT", func() {
@@ -97,10 +95,46 @@ var _ = Describe("JWT", func() {
 		token, err := CreateToken(claims, privKey)
 		Expect(err).NotTo(HaveOccurred())
 		r, _ := http.NewRequest("GET", "http://foobar.com", nil)
-		r.Header.Add("Authorization", "bearer "+token)
-		reClaims, err := GetClaimsFromRequest(r, pubKey)
+		r.Header.Add("Authorization", "Bearer "+token)
+		prefix, reClaims, err := GetClaimsFromRequest(r, pubKey)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(reClaims).To(Equal(claims))
+		Expect(prefix).To(Equal("Bearer"))
+	})
+
+	It("should be possible to get a token from a http requests authorization header with Token prefix", func() {
+		claims := Claims{"foo": "bar"}
+		pubKey, err := ParsePublicKey(rsaPubKey)
+		Expect(err).NotTo(HaveOccurred())
+		privKey, err := ParsePrivateKey(rsaPrivKey)
+		Expect(err).NotTo(HaveOccurred())
+		token, err := CreateToken(claims, privKey)
+		Expect(err).NotTo(HaveOccurred())
+		r, _ := http.NewRequest("GET", "http://foobar.com", nil)
+		r.Header.Add("Authorization", "Token "+token)
+		prefix, reClaims, err := GetClaimsFromRequest(r, pubKey)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(reClaims).To(Equal(claims))
+		Expect(prefix).To(Equal("Token"))
+	})
+
+	It("should be possible to get a token from a http requests get parameter", func() {
+		claims := Claims{"foo": "bar"}
+		pubKey, err := ParsePublicKey(rsaPubKey)
+		Expect(err).NotTo(HaveOccurred())
+		privKey, err := ParsePrivateKey(rsaPrivKey)
+		Expect(err).NotTo(HaveOccurred())
+		token, err := CreateToken(claims, privKey)
+		Expect(err).NotTo(HaveOccurred())
+		r, _ := http.NewRequest("GET", "http://foobar.com", nil)
+		q := r.URL.Query()
+		q.Add("token", token)
+		r.URL.RawQuery = q.Encode()
+
+		prefix, reClaims, err := GetClaimsFromRequest(r, pubKey)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(reClaims).To(Equal(claims))
+		Expect(prefix).To(Equal("GET"))
 	})
 
 	It("should NOT be possible to get a token from a http requests authorization header if the header is malformed", func() {
@@ -112,10 +146,21 @@ var _ = Describe("JWT", func() {
 		token, err := CreateToken(claims, privKey)
 		Expect(err).NotTo(HaveOccurred())
 		r, _ := http.NewRequest("GET", "http://foobar.com", nil)
-		r.Header.Add("Authorization", token)
-		reClaims, err := GetClaimsFromRequest(r, pubKey)
+		r.Header.Add("Authorization", "bearder "+token+" garbage")
+		prefix, reClaims, err := GetClaimsFromRequest(r, pubKey)
 		Expect(err).To(HaveOccurred())
 		Expect(reClaims).To(BeEmpty())
+		Expect(prefix).To(BeEmpty())
+	})
+
+	It("should NOT be possible to get a token from a http requests authorization header if the token is missing", func() {
+		pubKey, err := ParsePublicKey(rsaPubKey)
+		Expect(err).NotTo(HaveOccurred())
+		r, _ := http.NewRequest("GET", "http://foobar.com", nil)
+		prefix, reClaims, err := GetClaimsFromRequest(r, pubKey)
+		Expect(err).To(HaveOccurred())
+		Expect(reClaims).To(BeEmpty())
+		Expect(prefix).To(BeEmpty())
 	})
 
 	It("should NOT be possible to create a token with a wrong key type", func() {
