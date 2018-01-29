@@ -1,6 +1,7 @@
 package jwt
 
 import (
+	"encoding/base64"
 	"io/ioutil"
 	"net/http"
 	"reflect"
@@ -10,6 +11,38 @@ import (
 )
 
 var _ = Describe("JWT", func() {
+
+	It("should be possible to get claims without validating the token", func() {
+		claims := Claims{"foo": "bar"}
+		privKey, err := ParsePrivateKey(ecdsaPrivKey)
+		Expect(err).NotTo(HaveOccurred())
+		token, err := CreateToken(claims, privKey)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(token).NotTo(BeEmpty())
+
+		reClaims, err := GetUnvalidatedClaims(token)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(reClaims).To(Equal(claims))
+	})
+
+	It("should NOT be possible to get claims of a malencoded token even when skipping validation", func() {
+		reClaims, err := GetUnvalidatedClaims("header.not base 64 encoded.sig")
+		Expect(err).To(HaveOccurred())
+		Expect(reClaims).To(BeEmpty())
+	})
+
+	It("should NOT be possible to get claims of a token missing parts even when skipping validation", func() {
+		reClaims, err := GetUnvalidatedClaims("header.badtoken")
+		Expect(err).To(HaveOccurred())
+		Expect(reClaims).To(BeEmpty())
+	})
+
+	It("should NOT be possible to get claims of a token with invalid json even when skipping validation", func() {
+		badPaylod := base64.StdEncoding.EncodeToString([]byte("{bad: json}"))
+		reClaims, err := GetUnvalidatedClaims("header." + badPaylod + ".sig")
+		Expect(err).To(HaveOccurred())
+		Expect(reClaims).To(BeEmpty())
+	})
 
 	It("should be possible to create and verify a token using HMAC", func() {
 		claims := Claims{"foo": "bar"}
@@ -86,6 +119,20 @@ var _ = Describe("JWT", func() {
 		Expect(err).To(HaveOccurred())
 	})
 
+	It("should be possible to get a token from a http requests without valdiation", func() {
+		claims := Claims{"foo": "bar"}
+		privKey, err := ParsePrivateKey(rsaPrivKey)
+		Expect(err).NotTo(HaveOccurred())
+		token, err := CreateToken(claims, privKey)
+		Expect(err).NotTo(HaveOccurred())
+		r, _ := http.NewRequest("GET", "http://foobar.com", nil)
+		r.Header.Add("Authorization", "Bearer "+token)
+		prefix, reClaims, err := GetClaimsFromRequest(r, nil, true)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(reClaims).To(Equal(claims))
+		Expect(prefix).To(Equal("Bearer"))
+	})
+
 	It("should be possible to get a token from a http requests authorization header", func() {
 		claims := Claims{"foo": "bar"}
 		pubKey, err := ParsePublicKey(rsaPubKey)
@@ -96,7 +143,7 @@ var _ = Describe("JWT", func() {
 		Expect(err).NotTo(HaveOccurred())
 		r, _ := http.NewRequest("GET", "http://foobar.com", nil)
 		r.Header.Add("Authorization", "Bearer "+token)
-		prefix, reClaims, err := GetClaimsFromRequest(r, pubKey)
+		prefix, reClaims, err := GetClaimsFromRequest(r, pubKey, false)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(reClaims).To(Equal(claims))
 		Expect(prefix).To(Equal("Bearer"))
@@ -112,7 +159,7 @@ var _ = Describe("JWT", func() {
 		Expect(err).NotTo(HaveOccurred())
 		r, _ := http.NewRequest("GET", "http://foobar.com", nil)
 		r.Header.Add("Authorization", "Token "+token)
-		prefix, reClaims, err := GetClaimsFromRequest(r, pubKey)
+		prefix, reClaims, err := GetClaimsFromRequest(r, pubKey, false)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(reClaims).To(Equal(claims))
 		Expect(prefix).To(Equal("Token"))
@@ -131,7 +178,7 @@ var _ = Describe("JWT", func() {
 		q.Add("token", token)
 		r.URL.RawQuery = q.Encode()
 
-		prefix, reClaims, err := GetClaimsFromRequest(r, pubKey)
+		prefix, reClaims, err := GetClaimsFromRequest(r, pubKey, false)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(reClaims).To(Equal(claims))
 		Expect(prefix).To(Equal("GET"))
@@ -147,7 +194,7 @@ var _ = Describe("JWT", func() {
 		Expect(err).NotTo(HaveOccurred())
 		r, _ := http.NewRequest("GET", "http://foobar.com", nil)
 		r.Header.Add("Authorization", "bearder "+token+" garbage")
-		prefix, reClaims, err := GetClaimsFromRequest(r, pubKey)
+		prefix, reClaims, err := GetClaimsFromRequest(r, pubKey, false)
 		Expect(err).To(HaveOccurred())
 		Expect(reClaims).To(BeEmpty())
 		Expect(prefix).To(BeEmpty())
@@ -157,7 +204,7 @@ var _ = Describe("JWT", func() {
 		pubKey, err := ParsePublicKey(rsaPubKey)
 		Expect(err).NotTo(HaveOccurred())
 		r, _ := http.NewRequest("GET", "http://foobar.com", nil)
-		prefix, reClaims, err := GetClaimsFromRequest(r, pubKey)
+		prefix, reClaims, err := GetClaimsFromRequest(r, pubKey, false)
 		Expect(err).To(HaveOccurred())
 		Expect(reClaims).To(BeEmpty())
 		Expect(prefix).To(BeEmpty())

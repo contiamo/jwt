@@ -1,8 +1,10 @@
 package jwt
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"crypto/rsa"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -87,6 +89,27 @@ func ValidateToken(tokenString string, key interface{}) (Claims, error) {
 	return nil, errors.New("invalid token")
 }
 
+// GetUnvalidatedClaims extracts the token claims without validating the token
+func GetUnvalidatedClaims(tokenString string) (claims Claims, err error) {
+
+	parts := strings.Split(tokenString, ".")
+	if len(parts) != 3 {
+		return nil, errors.New("token contains an invalid number of segments")
+	}
+
+	claimBytes, err := jwt.DecodeSegment(parts[1])
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.NewDecoder(bytes.NewBuffer(claimBytes)).Decode(&claims)
+	if err != nil {
+		return nil, err
+	}
+
+	return claims, nil
+}
+
 // LoadPublicKey loads a PEM encoded public key (either rsa or ec)
 func LoadPublicKey(keyFile string) (interface{}, error) {
 	bs, err := ioutil.ReadFile(keyFile)
@@ -162,10 +185,15 @@ func GetTokenFromRequest(r *http.Request) (prefix string, token string, err erro
 }
 
 // GetClaimsFromRequest extracts and validates the token from a request, returning the claims
-func GetClaimsFromRequest(r *http.Request, key interface{}) (prefix string, claims Claims, err error) {
+func GetClaimsFromRequest(r *http.Request, key interface{}, skipValidate bool) (prefix string, claims Claims, err error) {
 	prefix, token, err := GetTokenFromRequest(r)
 	if err != nil {
 		return prefix, nil, err
+	}
+
+	if skipValidate {
+		claims, err = GetUnvalidatedClaims(token)
+		return prefix, claims, err
 	}
 
 	claims, err = ValidateToken(token, key)
