@@ -179,18 +179,27 @@ func GetTokenFromRequest(r *http.Request) (prefix string, token string, err erro
 	return prefix, token, nil
 }
 
-// GetClaimsFromRequest extracts and validates the token from a request, returning the claims
-func GetClaimsFromRequest(r *http.Request, key interface{}, skipValidate bool) (prefix string, claims Claims, err error) {
+// GetClaimsFromRequestWithValidation extracts and validates the token from a request, returning the claims
+func GetClaimsFromRequestWithValidation(r *http.Request, key interface{}) (prefix string, claims Claims, err error) {
 	prefix, token, err := GetTokenFromRequest(r)
 	if err != nil {
 		return prefix, nil, err
 	}
 
-	if skipValidate {
-		claims, err = GetUnvalidatedClaims(token)
-		return prefix, claims, err
+	claims, err = ValidateToken(token, key)
+	return prefix, claims, err
+}
+
+// GetClaimsFromRequest extracts the token from a request, returning the
+// claims without validating the token. This should only be used in situations
+// where you can already trust or if you are simply logging the claim
+// information.
+func GetClaimsFromRequest(r *http.Request) (prefix string, claims Claims, err error) {
+	prefix, token, err := GetTokenFromRequest(r)
+	if err != nil {
+		return prefix, nil, err
 	}
 
-	claims, err = ValidateToken(token, key)
+	claims, err = GetUnvalidatedClaims(token)
 	return prefix, claims, err
 }
