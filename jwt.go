@@ -102,12 +102,7 @@ func GetUnvalidatedClaims(tokenString string) (claims Claims, err error) {
 		return nil, err
 	}
 
-	err = json.NewDecoder(bytes.NewBuffer(claimBytes)).Decode(&claims)
-	if err != nil {
-		return nil, err
-	}
-
-	return claims, nil
+	return claims, json.NewDecoder(bytes.NewBuffer(claimBytes)).Decode(&claims)
 }
 
 // LoadPublicKey loads a PEM encoded public key (either rsa or ec)

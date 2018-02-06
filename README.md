@@ -28,7 +28,7 @@ CreateToken takes some claims and a key (either private rsa, private ec or hmac 
 #### func GetTokenFromRequest
 
 ```go
-func GetTokenFromRequest(r *http.Request) (TokenPrefix, string, error)
+func GetTokenFromRequest(r *http.Request) (string, string, error)
 ```
 GetTokenFromRequest takes the first Authorization header and extracts the bearer
 json web token
