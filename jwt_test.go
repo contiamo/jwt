@@ -2,8 +2,10 @@ package jwt
 
 import (
 	"encoding/base64"
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"reflect"
 
 	. "github.com/onsi/ginkgo"
@@ -256,6 +258,34 @@ var _ = Describe("JWT", func() {
 		claims, err = ValidateToken(token, pubKey)
 		Expect(err).To(HaveOccurred())
 		Expect(claims).To(BeEmpty())
+	})
+
+	It("should be possible to use the RequireClaim middleware", func() {
+		handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+		claims := Claims{"foo": "bar"}
+		pubKey, err := ParsePublicKey(rsaPubKey)
+		Expect(err).NotTo(HaveOccurred())
+		privKey, err := ParsePrivateKey(rsaPrivKey)
+		Expect(err).NotTo(HaveOccurred())
+		token, err := CreateToken(claims, privKey)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(token).NotTo(BeEmpty())
+
+		handlerA := RequireClaim(handler, pubKey, "Authorization", "foo", "bar")
+		r, _ := http.NewRequest(http.MethodGet, "/", nil)
+		r.Header.Set("Authorization", "bearer "+token)
+		w := httptest.NewRecorder()
+		handlerA.ServeHTTP(w, r)
+		fmt.Println(w.Body)
+		Expect(w.Code).To(Equal(http.StatusOK))
+
+		handlerB := RequireClaim(handler, pubKey, "Authorization", "foo", "barbara")
+		r, _ = http.NewRequest(http.MethodGet, "/", nil)
+		r.Header.Set("Authorization", "bearer "+token)
+		w = httptest.NewRecorder()
+		handlerB.ServeHTTP(w, r)
+		fmt.Println(w.Body)
+		Expect(w.Code).To(Equal(http.StatusUnauthorized))
 	})
 
 })
