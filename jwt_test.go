@@ -348,6 +348,37 @@ var _ = Describe("JWT", func() {
 		Expect(w.Code).To(Equal(http.StatusUnauthorized))
 	})
 
+	It("should be possible to get claims from a user specified header without prefix", func() {
+		claims := Claims{"foo": "bar"}
+		pubKey, err := ParsePublicKey(rsaPubKey)
+		Expect(err).NotTo(HaveOccurred())
+		privKey, err := ParsePrivateKey(rsaPrivKey)
+		Expect(err).NotTo(HaveOccurred())
+		token, err := CreateToken(claims, privKey)
+		Expect(err).NotTo(HaveOccurred())
+		r, _ := http.NewRequest("GET", "http://foobar.com", nil)
+		r.Header.Add("X-Custom-Token", token)
+		prefix, reClaims, err := GetClaimsFromRequestWithValidation(r, "X-Custom-Token", pubKey)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(reClaims).To(Equal(claims))
+		Expect(prefix).To(Equal(""))
+	})
+	It("should be possible to get claims from a user specified header with prefix", func() {
+		claims := Claims{"foo": "bar"}
+		pubKey, err := ParsePublicKey(rsaPubKey)
+		Expect(err).NotTo(HaveOccurred())
+		privKey, err := ParsePrivateKey(rsaPrivKey)
+		Expect(err).NotTo(HaveOccurred())
+		token, err := CreateToken(claims, privKey)
+		Expect(err).NotTo(HaveOccurred())
+		r, _ := http.NewRequest("GET", "http://foobar.com", nil)
+		r.Header.Add("X-Custom-Token", "custom-prefix "+token)
+		prefix, reClaims, err := GetClaimsFromRequestWithValidation(r, "X-Custom-Token", pubKey)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(reClaims).To(Equal(claims))
+		Expect(prefix).To(Equal("custom-prefix"))
+	})
+
 })
 
 var (
