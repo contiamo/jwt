@@ -83,8 +83,10 @@ func ValidateToken(tokenString string, key interface{}) (Claims, error) {
 	if err != nil {
 		return nil, err
 	}
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		return Claims(claims), nil
+	if token != nil {
+		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			return Claims(claims), nil
+		}
 	}
 	return nil, errors.New("invalid token")
 }
