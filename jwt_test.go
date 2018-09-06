@@ -271,7 +271,7 @@ var _ = Describe("JWT", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(token).NotTo(BeEmpty())
 
-		handlerA := RequireClaim(handler, pubKey, "Authorization", "foo", "bar")
+		handlerA := ClaimsToContextMiddleware(RequireClaim(handler, "foo", "bar"), pubKey)
 		r, _ := http.NewRequest(http.MethodGet, "/", nil)
 		r.Header.Set("Authorization", "bearer "+token)
 		w := httptest.NewRecorder()
@@ -279,7 +279,7 @@ var _ = Describe("JWT", func() {
 		fmt.Println(w.Body)
 		Expect(w.Code).To(Equal(http.StatusOK))
 
-		handlerB := RequireClaim(handler, pubKey, "Authorization", "foo", "barbara")
+		handlerB := ClaimsToContextMiddleware(RequireClaim(handler, "foo", "barbara"), pubKey)
 		r, _ = http.NewRequest(http.MethodGet, "/", nil)
 		r.Header.Set("Authorization", "bearer "+token)
 		w = httptest.NewRecorder()
