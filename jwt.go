@@ -157,7 +157,7 @@ func GetTokenFromRequest(r *http.Request, header string) (prefix string, token s
 	if header == "" {
 		header = AuthorizationHeader
 	}
-	tokenList, ok := r.Header[header]
+	tokenList, ok := r.Header[http.CanonicalHeaderKey(header)]
 	// pull from GET if not in the headers
 	if !ok || len(tokenList) < 1 {
 		tokenList, ok = r.URL.Query()["token"]
