@@ -153,9 +153,11 @@ func ParsePrivateKey(data []byte) (interface{}, error) {
 
 // GetTokenFromRequest takes the first Authorization header or `token` GET pararm , then
 // extract the token prefix and json web token
-func GetTokenFromRequest(r *http.Request) (prefix string, token string, err error) {
-
-	tokenList, ok := r.Header[AuthorizationHeader]
+func GetTokenFromRequest(r *http.Request, header string) (prefix string, token string, err error) {
+	if header == "" {
+		header = AuthorizationHeader
+	}
+	tokenList, ok := r.Header[header]
 	// pull from GET if not in the headers
 	if !ok || len(tokenList) < 1 {
 		tokenList, ok = r.URL.Query()["token"]
@@ -182,8 +184,8 @@ func GetTokenFromRequest(r *http.Request) (prefix string, token string, err erro
 }
 
 // GetClaimsFromRequestWithValidation extracts and validates the token from a request, returning the claims
-func GetClaimsFromRequestWithValidation(r *http.Request, key interface{}) (prefix string, claims Claims, err error) {
-	prefix, token, err := GetTokenFromRequest(r)
+func GetClaimsFromRequestWithValidation(r *http.Request, header string, key interface{}) (prefix string, claims Claims, err error) {
+	prefix, token, err := GetTokenFromRequest(r, header)
 	if err != nil {
 		return prefix, nil, err
 	}
@@ -196,8 +198,8 @@ func GetClaimsFromRequestWithValidation(r *http.Request, key interface{}) (prefi
 // claims without validating the token. This should only be used in situations
 // where you can already trust or if you are simply logging the claim
 // information.
-func GetClaimsFromRequest(r *http.Request) (prefix string, claims Claims, err error) {
-	prefix, token, err := GetTokenFromRequest(r)
+func GetClaimsFromRequest(r *http.Request, header string) (prefix string, claims Claims, err error) {
+	prefix, token, err := GetTokenFromRequest(r, header)
 	if err != nil {
 		return prefix, nil, err
 	}
