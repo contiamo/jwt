@@ -135,6 +135,14 @@ var _ = Describe("JWT", func() {
 		Expect(prefix).To(Equal("Bearer"))
 	})
 
+	It("should NOT be possible to get a claims from a request without token", func() {
+		r, _ := http.NewRequest("GET", "http://foobar.com", nil)
+		prefix, reClaims, err := GetClaimsFromRequest(r)
+		Expect(err).To(HaveOccurred())
+		Expect(reClaims).To(BeEmpty())
+		Expect(prefix).To(BeEmpty())
+	})
+
 	It("should be possible to get a token from a http requests authorization header", func() {
 		claims := Claims{"foo": "bar"}
 		pubKey, err := ParsePublicKey(rsaPubKey)
@@ -260,6 +268,12 @@ var _ = Describe("JWT", func() {
 		Expect(claims).To(BeEmpty())
 	})
 
+	It("should NOT be possible to validate an completely invalid token", func() {
+		claims, err := ValidateToken("wtf-this-is-wrong", 123)
+		Expect(err).To(HaveOccurred())
+		Expect(claims).To(BeEmpty())
+	})
+
 	It("should be possible to use the RequireClaim middleware", func() {
 		handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 		claims := Claims{"foo": "bar"}
@@ -284,7 +298,53 @@ var _ = Describe("JWT", func() {
 		r.Header.Set("Authorization", "bearer "+token)
 		w = httptest.NewRecorder()
 		handlerB.ServeHTTP(w, r)
-		fmt.Println(w.Body)
+		Expect(w.Code).To(Equal(http.StatusUnauthorized))
+	})
+
+	It("should block access if the ClaimsToContextMiddleware is invoked with a invalid token", func() {
+		claims := Claims{"exp": 123} // obviously in the past, zero doesnt work as it is ommited in json :D
+		pubKey, err := ParsePublicKey(rsaPubKey)
+		Expect(err).NotTo(HaveOccurred())
+		privKey, err := ParsePrivateKey(rsaPrivKey)
+		Expect(err).NotTo(HaveOccurred())
+		token, err := CreateToken(claims, privKey)
+		Expect(err).NotTo(HaveOccurred())
+		r, _ := http.NewRequest("GET", "http://foobar.com", nil)
+		r.Header.Add("Authorization", "Bearer "+token)
+
+		handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+		handler = ClaimsToContextMiddleware(handler, pubKey)
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, r)
+		Expect(w.Code).To(Equal(http.StatusUnauthorized))
+	})
+
+	It("should block access if the RequireClaim middleware cant find claims in the context", func() {
+		r, _ := http.NewRequest("GET", "http://foobar.com", nil)
+
+		handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+		handler = RequireClaim(handler, "", "")
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, r)
+		Expect(w.Code).To(Equal(http.StatusUnauthorized))
+	})
+
+	It("should block access if the required claim value has wrong type (not string)", func() {
+		claims := Claims{"foo": 123}
+		pubKey, err := ParsePublicKey(rsaPubKey)
+		Expect(err).NotTo(HaveOccurred())
+		privKey, err := ParsePrivateKey(rsaPrivKey)
+		Expect(err).NotTo(HaveOccurred())
+		token, err := CreateToken(claims, privKey)
+		Expect(err).NotTo(HaveOccurred())
+		r, _ := http.NewRequest("GET", "http://foobar.com", nil)
+		r.Header.Add("Authorization", "Bearer "+token)
+
+		handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+		handler = RequireClaim(handler, "foo", "bar")
+		handler = ClaimsToContextMiddleware(handler, pubKey)
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, r)
 		Expect(w.Code).To(Equal(http.StatusUnauthorized))
 	})
 

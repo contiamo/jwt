@@ -48,7 +48,11 @@ func RequireClaim(handler http.Handler, claimKey, expectedClaimValue string) htt
 
 // ClaimsFromContext retrieves the requests claims from a context
 func ClaimsFromContext(ctx context.Context) Claims {
-	return ctx.Value(claimContextKey).(Claims)
+	claims, ok := ctx.Value(claimContextKey).(Claims)
+	if ok {
+		return claims
+	}
+	return nil
 }
 
 // ClaimsToContext stores claims in a context
