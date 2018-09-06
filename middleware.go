@@ -12,9 +12,9 @@ var (
 )
 
 // ClaimsToContextMiddleware is a http middleware which parses and validates a jwt from the authorization header and stores the claims in the requests context before calling the next handler.
-func ClaimsToContextMiddleware(handler http.Handler, idpKey interface{}) http.Handler {
+func ClaimsToContextMiddleware(handler http.Handler, header string, idpKey interface{}) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, claims, err := GetClaimsFromRequestWithValidation(r, idpKey)
+		_, claims, err := GetClaimsFromRequestWithValidation(r, header, idpKey)
 		if err != nil {
 			http.Error(w, "not authorized: failed to validate token: "+err.Error(), http.StatusUnauthorized)
 			return
