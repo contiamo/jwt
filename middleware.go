@@ -40,7 +40,7 @@ func RequireClaim(handler http.Handler, claimKey, expectedClaimValue string) htt
 			http.Error(w, msg, http.StatusUnauthorized)
 			return
 		}
-		log = log.WithFields("claims", claims)
+		log = log.WithField("claims", claims)
 		claimVal, ok := claims[claimKey].(string)
 		if !ok {
 			msg := "not authorized: claim value has wrong type"
