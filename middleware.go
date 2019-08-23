@@ -30,8 +30,9 @@ func ClaimsToContextMiddleware(handler http.Handler, header string, idpKey inter
 
 // RequireClaim checks if the requests claims contain a specific value for a specific key
 func RequireClaim(handler http.Handler, claimKey, expectedClaimValue string) http.Handler {
-	log := logrus.WithField("require-claim", claimKey)
-	log = log.WithField("expected-value", expectedClaimValue)
+	log := logrus.
+		WithField("require-claim", claimKey).
+		WithField("expected-value", expectedClaimValue)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		claims := ClaimsFromContext(r.Context())
 		if claims == nil {
